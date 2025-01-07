@@ -6,13 +6,13 @@ program md_act
 
     ! Read the value of the filename variable from the user
     print *, "Please, introduce the name of the file: "
-    print *,
+    print *, ''
     read(*,'(a)') input_file
-    print *,
+    print *, ''
     open(unit=2, file=input_file, status='old', action='read')
     
     Natoms = read_Natoms(2)
-    allocate(coord(3,3), mass(3))
+    allocate(coord(Natoms,3), mass(Natoms))
     call read_molecule(2, Natoms, coord, mass)
     close(2)
 
