@@ -2,6 +2,7 @@ program md_act
     implicit none
     integer :: i, j, Natoms
     character(len=50) :: input_file
+    double precision :: total_V
     double precision, allocatable :: coord(:,:), mass(:)
 
     ! Read the value of the filename variable from the user
@@ -24,20 +25,17 @@ contains
         integer, intent(in) :: input_file      
 
         read(input_file, *) Natoms
-        print *, Natoms
 
     end function read_Natoms
     
-    subroutine read_molecule(input_file, natoms, coord, mass)
+    subroutine read_molecule(input_file, Natoms, coord, mass)
         implicit none
         integer :: i, j, ierr
         integer, intent(in) :: input_file, natoms
-        double precision, intent(out) :: coord(natoms,3), mass(natoms)
+        double precision, intent(out) :: coord(Natoms,3), mass(Natoms)
     
-        ! Skip first line
-        read(input_file, *)
         ! Read data of every atom
-        do i = 1, natoms
+        do i = 1, Natoms
             read(input_file, *, iostat=ierr) (coord(i,j), j=1,3), mass(i)
             ! Check succesfull reading
             if (ierr /= 0) then
@@ -47,5 +45,22 @@ contains
         enddo
 
     end subroutine read_molecule
+
+    double precision function V(epsilon, sigma, Natoms, distance)
+        implicit none
+        integer :: i
+        double precision, intent(in) :: epsilon, sigma
+        integer, intent(in) :: Natoms
+        double precision, intent(in) :: distance(Natoms,Natoms)
+
+        V = 0.0d0
+        do i = 1, Natoms
+            do j = i+1, Natoms
+                V = V + 4*epsilon*( (sigma/distance(i,j))**12 - &
+                (sigma/distance(i,j))**6 )
+            enddo 
+        enddo
+
+    end function V
 
 end program md_act
