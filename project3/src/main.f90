@@ -1,9 +1,10 @@
 program md_act
     implicit none
-    integer :: i, j, Natoms
+    integer :: i, j, Natoms, total_steps
     character(len=50) :: input_file
-    double precision :: total_V, total_T
-    double precision, allocatable :: coord(:,:), mass(:), distance(:,:), acceleration(:,:)
+    double precision :: dt, total_V, total_T
+    double precision, allocatable :: new_coord(:,:), coord(:,:), mass(:), distance(:,:)
+    double precision, allocatable :: new_velocity(:,:), velocity(:,:), acceleration(:,:)
     double precision, parameter :: epsilon=0.0661d0, sigma=0.3345d0
 
     ! Read the value of the filename variable from the user
@@ -14,21 +15,42 @@ program md_act
     open(unit=2, file=input_file, status='old', action='read')
     
     Natoms = read_Natoms(2)
-    allocate(coord(Natoms,3), mass(Natoms), distance(Natoms, Natoms), acceleration(Natoms, 3))
+    allocate(coord(Natoms,3), new_coord(Natoms,3), mass(Natoms), distance(Natoms, Natoms))
+    allocate(new_velocity(Natoms, 3), velocity(Natoms, 3), acceleration(Natoms, 3))
     call read_molecule(2, Natoms, coord, mass)
     close(2)
 
     call compute_distances(Natoms, coord, distance)
-    total_V = V(epsilon, sigma, Natoms, distance)
-    
-    total_T = T(Natoms, reshape([1.d0, 2.d0, 3.d0, 4.d0, 5.d0, 6.d0, 7.d0, 8.d0, 9.d0], [3, 3]), mass)
+    velocity = 0.0d0
     call compute_acc(Natoms, coord, mass, distance, acceleration)
+
     open(3, file="traj.xyz", status="new")
 
-    call write_xyz(Natoms, total_V, total_T, coord, mass)
+    dt = 0.2d0
+    total_steps = 1000
+    
+    do i = 1, total_steps
+        new_coord = coord + velocity*dt + acceleration*dt**2/2
+        new_velocity = velocity + 0.5d0*dt*acceleration
+        call compute_distances(Natoms, new_coord, distance)
+        call compute_acc(Natoms, new_coord, mass, distance, acceleration)
+        new_velocity = new_velocity + 0.5d0*dt*acceleration
+        total_V = V(epsilon, sigma, Natoms, distance)
+        total_T = T(Natoms, new_velocity, mass)
+
+        coord = new_coord
+        velocity = new_velocity
+
+        print*, i
+        print*, total_V
+        print*, total_T
+        print*, total_T - total_V
+        print*, ''
+    enddo
 
     close(3)
-    deallocate(coord, mass, distance, acceleration)
+    deallocate(coord, mass, distance, velocity, acceleration)
+    deallocate(new_coord, new_velocity)
 
 contains
 
