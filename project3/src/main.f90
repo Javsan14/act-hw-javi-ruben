@@ -2,7 +2,7 @@ program md_act
     implicit none
     integer :: i, j, Natoms
     character(len=50) :: input_file
-    double precision :: total_V
+    double precision :: total_V, total_T
     double precision, allocatable :: coord(:,:), mass(:), distance(:,:), acceleration(:,:)
     double precision, parameter :: epsilon=0.0661d0, sigma=0.3345d0
 
@@ -21,6 +21,7 @@ program md_act
     call compute_distances(Natoms, coord, distance)
     total_V = V(epsilon, sigma, Natoms, distance)
     
+    total_T = T(Natoms, reshape([1.d0, 2.d0, 3.d0, 4.d0, 5.d0, 6.d0, 7.d0, 8.d0, 9.d0], [3, 3]), mass)
     call compute_acc(Natoms, coord, mass, distance, acceleration)
 
     deallocate(coord, mass, distance, acceleration)
@@ -88,7 +89,24 @@ contains
         enddo
 
     end function V
+    
+    double precision function T(Natoms, velocity, mass)
+        implicit none
+        integer, intent(in) :: Natoms
+        double precision, intent(in) :: velocity(Natoms, 3), mass(Natoms)
+        integer :: i
 
+        !T = 0.d0
+        !do i=1, Natoms
+        !    T = T + mass(i)*norm2(velocity(i, :))**2
+        !end do
+        !print *, T*0.5d0
+
+        T = 0.d0
+        T = 0.5d0 * dot_product(mass, norm2(velocity, dim=1)**2)
+
+    end function T
+    
     subroutine compute_acc(Natoms, coord, mass, distance, acceleration)
         implicit none
         integer :: i, j
@@ -114,8 +132,6 @@ contains
             acceleration(i, 2) = -1.0d0/mass(i) * sum_y
             acceleration(i, 3) = -1.0d0/mass(i) * sum_z
         enddo
-
-        print*, acceleration
 
     end subroutine compute_acc
     
