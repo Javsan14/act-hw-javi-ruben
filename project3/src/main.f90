@@ -4,6 +4,7 @@ program md_act
     character(len=50) :: input_file
     double precision :: total_V
     double precision, allocatable :: coord(:,:), mass(:), distance(:, :)
+    double precision, parameter :: epsilon=0.0661d0, sigma=0.3345d0
 
     ! Read the value of the filename variable from the user
     print *, "Please, introduce the name of the file: "
@@ -18,12 +19,16 @@ program md_act
     close(2)
 
     call compute_distances(Natoms, coord, distance)
+    total_V = V(epsilon, sigma, Natoms, distance)
+    
+    
 
     deallocate(coord, mass, distance)
 
 contains
 
     integer function read_Natoms(input_file) result(Natoms)
+        implicit none
         integer, intent(in) :: input_file      
 
         read(input_file, *) Natoms
@@ -49,6 +54,7 @@ contains
     end subroutine read_molecule
 
     subroutine compute_distances(Natoms, coord, distance)
+        implicit none
         integer, intent(in) :: Natoms
         double precision, intent(in) :: coord(Natoms, 3)
         double precision, intent(out) :: distance(Natoms, Natoms)
