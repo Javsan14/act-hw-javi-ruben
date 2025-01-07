@@ -10,6 +10,8 @@ program md_act
     
     Natoms = read_Natoms(2)
 
+    close(2)
+    
     contains
 
     integer function read_Natoms(input_file) result(Natoms)
