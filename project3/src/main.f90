@@ -1,26 +1,33 @@
 program md_act
     implicit none
-    integer :: i, j
+    integer :: i, j, Natoms
     character(len=50) :: input_file
     double precision, allocatable :: coord(:,:), mass(:)
 
     ! Read the value of the filename variable from the user
-    write(*,*) 'Welcome, please enter the name of the file of the molecule:'
-    write(*,*)
+    print *, "Please, introduce the name of the file: "
+    print *,
     read(*,'(a)') input_file
-    write(*,*)
+    print *,
     open(unit=2, file=input_file, status='old', action='read')
-    allocate(coord(3,3))
-    allocate(mass(3))
-    call read_molecule(2, 3, coord, mass)
+    
+    Natoms = read_Natoms(2)
+    allocate(coord(3,3), mass(3))
+    call read_molecule(2, Natoms, coord, mass)
     close(2)
-
-    write(*,*) coord, mass
 
     deallocate(coord, mass)
 
 contains
 
+    integer function read_Natoms(input_file) result(Natoms)
+        integer, intent(in) :: input_file      
+
+        read(input_file, *) Natoms
+        print *, Natoms
+
+    end function read_Natoms
+    
     subroutine read_molecule(input_file, natoms, coord, mass)
         implicit none
         integer :: i, j, ierr
