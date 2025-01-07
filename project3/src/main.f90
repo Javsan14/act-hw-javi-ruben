@@ -41,11 +41,10 @@ program md_act
         coord = new_coord
         velocity = new_velocity
 
-        print*, i
-        print*, total_V
-        print*, total_T
-        print*, total_T - total_V
-        print*, ''
+        if (mod(i, 10) == 0) then
+            call write_xyz(Natoms, total_V, total_T, coord, mass)
+        end if
+
     enddo
 
     close(3)
