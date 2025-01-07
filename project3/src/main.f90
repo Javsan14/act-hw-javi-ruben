@@ -23,7 +23,9 @@ program md_act
     call compute_distances(Natoms, coord, distance)
     velocity = 0.0d0
     call compute_acc(Natoms, coord, mass, distance, acceleration)
-    
+
+    open(3, file="traj.xyz", status="new")
+
     dt = 0.2d0
     total_steps = 1000
     
@@ -46,6 +48,7 @@ program md_act
         print*, ''
     enddo
 
+    close(3)
     deallocate(coord, mass, distance, velocity, acceleration)
     deallocate(new_coord, new_velocity)
 
@@ -158,4 +161,64 @@ contains
 
     end subroutine compute_acc
     
+    subroutine write_xyz(Natoms, V, T, coord, mass)
+        integer, intent(in) :: Natoms
+        double precision, intent(in) :: V, T, coord(Natoms, 3), mass(Natoms)
+        integer :: i
+
+        write(3, *) Natoms
+        write(3, *) V, T, V+T
+
+        do i=1, Natoms
+            write(3, "(A2, 3F8.4)") from_mass_to_symbol(mass(i)), coord(i, :)
+        end do
+
+    end subroutine write_xyz
+
+    character(len=2) function from_mass_to_symbol(mass)
+        double precision, intent(in) :: mass
+
+        select case (nint(mass))
+        case (1)
+            from_mass_to_symbol = "H"
+        case (4)
+            from_mass_to_symbol = "He"
+        case (7)
+            from_mass_to_symbol = "Li"
+        case (9)
+            from_mass_to_symbol = "Be"
+        case (11)
+            from_mass_to_symbol = "B"
+        case (12)
+            from_mass_to_symbol = "C"
+        case (14)
+            from_mass_to_symbol = "N"
+        case (16)
+            from_mass_to_symbol = "O"
+        case (19)
+            from_mass_to_symbol = "F"
+        case (20)
+            from_mass_to_symbol = "Ne"
+        case (23)
+            from_mass_to_symbol = "Na"
+        case (24)
+            from_mass_to_symbol = "Mg"
+        case (27)
+            from_mass_to_symbol = "Al"
+        case (28)
+            from_mass_to_symbol = "Si"
+        case (31)
+            from_mass_to_symbol = "P"
+        case (32)
+            from_mass_to_symbol = "S"
+        case (35)
+            from_mass_to_symbol = "Cl"
+        case (40)
+            from_mass_to_symbol = "Ar"
+        case default
+            from_mass_to_symbol = "??"
+    end select
+
+    end function from_mass_to_symbol
+
 end program md_act
