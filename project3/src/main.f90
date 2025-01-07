@@ -3,7 +3,7 @@ program md_act
     integer :: i, j, Natoms
     character(len=50) :: input_file
     double precision :: total_V
-    double precision, allocatable :: coord(:,:), mass(:)
+    double precision, allocatable :: coord(:,:), mass(:), distance(:, :)
 
     ! Read the value of the filename variable from the user
     print *, "Please, introduce the name of the file: "
@@ -13,11 +13,13 @@ program md_act
     open(unit=2, file=input_file, status='old', action='read')
     
     Natoms = read_Natoms(2)
-    allocate(coord(Natoms,3), mass(Natoms))
+    allocate(coord(Natoms,3), mass(Natoms), distance(Natoms, Natoms))
     call read_molecule(2, Natoms, coord, mass)
     close(2)
 
-    deallocate(coord, mass)
+    call compute_distances(Natoms, coord, distance)
+
+    deallocate(coord, mass, distance)
 
 contains
 
@@ -46,6 +48,24 @@ contains
 
     end subroutine read_molecule
 
+    subroutine compute_distances(Natoms, coord, distance)
+        integer, intent(in) :: Natoms
+        double precision, intent(in) :: coord(Natoms, 3)
+        double precision, intent(out) :: distance(Natoms, Natoms)
+        double precision :: dist
+        integer :: i, j
+
+        distance = 0.d0
+        do i=1, Natoms
+            do j=i+1, Natoms
+                dist = norm2(coord(i, :) - coord(j, :))
+                distance(i, j) = dist
+                distance(j, i) = dist
+            end do
+        end do
+
+    end subroutine
+    
     double precision function V(epsilon, sigma, Natoms, distance)
         implicit none
         integer :: i
@@ -62,5 +82,5 @@ contains
         enddo
 
     end function V
-
+    
 end program md_act
