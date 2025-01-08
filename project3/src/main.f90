@@ -2,6 +2,7 @@ program md_act
     implicit none
     integer :: i, j, Natoms, total_steps
     character(len=50) :: input_file
+    logical :: file_exists
     double precision :: dt, total_V, total_T
     double precision, allocatable :: new_coord(:,:), coord(:,:), mass(:), distance(:,:)
     double precision, allocatable :: new_velocity(:,:), velocity(:,:), acceleration(:,:)
@@ -16,7 +17,7 @@ program md_act
     
     Natoms = read_Natoms(2)
     allocate(coord(Natoms,3), new_coord(Natoms,3), mass(Natoms), distance(Natoms, Natoms))
-    allocate(new_velocity(Natoms, 3), velocity(Natoms, 3), acceleration(Natoms, 3))
+    allocate(velocity(Natoms, 3), new_velocity(Natoms, 3), acceleration(Natoms, 3))
     call read_molecule(2, Natoms, coord, mass)
     close(2)
 
@@ -24,6 +25,11 @@ program md_act
     velocity = 0.0d0
     call compute_acc(Natoms, coord, mass, distance, acceleration)
 
+    inquire(file="traj.xyz", exist=file_exists)
+    if (file_exists) then
+        open(99, file="traj.xyz", status="old")
+        close(99, status='delete')
+    end if
     open(3, file="traj.xyz", status="new")
 
     dt = 0.2d0
@@ -139,24 +145,35 @@ contains
         double precision, intent(in) :: coord(Natoms,3)
         double precision, intent(in) :: mass(Natoms)
         double precision, intent(in) :: distance(Natoms,Natoms)
-        double precision :: U, sum_x, sum_y, sum_z
+        double precision :: U, fx, fy, fz
         double precision, intent(out) :: acceleration(Natoms,3)
 
+        ! Initialize acceleration to zero
+        acceleration = 0.0d0
+
+        ! Compute pairwise forces and update accelerations
         do i = 1, Natoms
-            sum_x = 0.0d0
-            sum_y = 0.0d0
-            sum_z = 0.0d0
             do j = i+1, Natoms
-                U = 24*epsilon/distance(i,j)*( (sigma/distance(i,j))**6 - &
-                2*(sigma/distance(i,j))**6 )
-                sum_x = sum_x + U * (coord(i, 1) - coord(j, 1))/distance(i,j)
-                sum_y = sum_y + U * (coord(i, 2) - coord(j, 2))/distance(i,j)
-                sum_z = sum_z + U * (coord(i, 3) - coord(j, 3))/distance(i,j)
-            enddo
-            acceleration(i, 1) = -1.0d0/mass(i) * sum_x
-            acceleration(i, 2) = -1.0d0/mass(i) * sum_y
-            acceleration(i, 3) = -1.0d0/mass(i) * sum_z
-        enddo
+                if (distance(i, j) > 0.0d0) then
+                    U = 24 * epsilon / distance(i, j) * ((sigma / distance(i, j))**6 - &
+                    2*(sigma / distance(i, j))**12)
+    
+                    ! Force components
+                    fx = U * (coord(i, 1) - coord(j, 1)) / distance(i, j)
+                    fy = U * (coord(i, 2) - coord(j, 2)) / distance(i, j)
+                    fz = U * (coord(i, 3) - coord(j, 3)) / distance(i, j)
+    
+                    ! Update accelerations for both atoms (i and j)
+                    acceleration(i, 1) = acceleration(i, 1) - fx / mass(i)
+                    acceleration(i, 2) = acceleration(i, 2) - fy / mass(i)
+                    acceleration(i, 3) = acceleration(i, 3) - fz / mass(i)
+    
+                    acceleration(j, 1) = acceleration(j, 1) + fx / mass(j)
+                    acceleration(j, 2) = acceleration(j, 2) + fy / mass(j)
+                    acceleration(j, 3) = acceleration(j, 3) + fz / mass(j)
+                end if
+            end do
+        end do
 
     end subroutine compute_acc
     
@@ -169,7 +186,7 @@ contains
         write(3, *) V, T, V+T
 
         do i=1, Natoms
-            write(3, "(A2, 3F8.4)") from_mass_to_symbol(mass(i)), coord(i, :)
+            write(3, "(A2, 3F10.6)") from_mass_to_symbol(mass(i)), coord(i, :)
         end do
 
     end subroutine write_xyz
