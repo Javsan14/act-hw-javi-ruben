@@ -17,3 +17,5 @@ make
 ```bash
 ./md
 ```
+
+Then follow the prompts of the program.
